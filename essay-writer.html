@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Essay BadUSB Writer - FlipperUSB</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+
+    <!-- SEO Meta Tags -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Turn any essay or note into a Flipper Zero BadUSB script that types itself out at a human speed. Set the words-per-minute, then download the .txt or save it straight to your Flipper.">
+    <meta name="keywords"
+        content="flipper, badusb, ducky script, essay writer, wpm, flipper zero, web serial, auto typer">
+    <meta name="author" content="dag nazty">
+    <meta name="theme-color" content="#FF8200">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://flipperusb.lol/essay-writer.html">
+    <meta property="og:title" content="Essay BadUSB Writer - FlipperUSB">
+    <meta property="og:description"
+        content="Turn any text into a Flipper Zero BadUSB script that types itself out at a human speed.">
+    <meta property="og:image" content="https://flipperusb.lol/assets/social_logo.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://flipperusb.lol/essay-writer.html">
+    <meta property="twitter:title" content="Essay BadUSB Writer - FlipperUSB">
+    <meta property="twitter:description"
+        content="Turn any text into a Flipper Zero BadUSB script that types itself out at a human speed.">
+    <meta property="twitter:image" content="https://flipperusb.lol/assets/social_logo.png">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Page-specific styles (composer), built on the shared design tokens -->
+    <style>
+        .page-badge {
+            padding: 5px 10px;
+            border-radius: var(--radius-full);
+            background: var(--flipper-orange-subtle);
+            border: 1px solid rgba(255, 130, 0, 0.25);
+            color: var(--flipper-orange-light);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .path-navigator .refresh-btn { margin-left: auto; }
+
+        .file-actions { padding: var(--space-md); padding-top: 0; }
+        .file-actions .flipper-button { width: 100%; }
+
+        /* keep quick access tidy under the actions */
+        .file-explorer .quick-access { padding-top: 0; }
+
+        /* Composer (right pane body) */
+        .composer {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: var(--space-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-lg);
+        }
+
+        .composer-block {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        .composer-block-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-md);
+            flex-wrap: wrap;
+        }
+
+        .composer-block-head h2,
+        .composer-block-head h3 {
+            font-size: 1rem;
+            letter-spacing: -0.01em;
+        }
+
+        .composer-block-head .sub {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .composer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: var(--space-md);
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        .field > .field-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .field input[type="text"],
+        .field input[type="number"] {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-default);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 0.92rem;
+            transition: var(--transition-fast);
+        }
+
+        .field input:focus {
+            outline: none;
+            border-color: var(--flipper-orange);
+            box-shadow: 0 0 0 3px var(--flipper-orange-subtle);
+        }
+
+        .field-hint {
+            color: var(--text-muted);
+            font-size: 0.74rem;
+        }
+
+        #delayPreview {
+            color: var(--flipper-orange-light);
+            font-family: var(--font-mono);
+            font-weight: 600;
+        }
+
+        .composer-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-md) var(--space-lg);
+        }
+
+        .checkbox {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-size: 0.88rem;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .checkbox input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--flipper-orange);
+            cursor: pointer;
+        }
+
+        .composer-text {
+            width: 100%;
+            padding: var(--space-md);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            line-height: 1.7;
+            resize: vertical;
+            min-height: 220px;
+            tab-size: 4;
+            transition: var(--transition-fast);
+        }
+
+        .composer-text:focus {
+            outline: none;
+            border-color: var(--flipper-orange);
+            box-shadow: 0 0 0 3px var(--flipper-orange-subtle);
+        }
+
+        .composer-text::placeholder { color: var(--text-muted); }
+
+        .composer-text:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #fileEditor { min-height: 180px; }
+
+        .hint-line {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+        }
+
+        .hint-line svg { width: 16px; height: 16px; color: var(--flipper-orange); flex: none; }
+
+        .hint-line code {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            padding: 1px 6px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+        }
+
+        /* Generated DuckyScript preview */
+        .script-preview {
+            margin: 0;
+            padding: var(--space-md);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-subtle);
+            border-left: 3px solid var(--flipper-orange);
+            border-radius: var(--radius-md);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 320px;
+            overflow: auto;
+        }
+
+        .script-preview[hidden] { display: none; }
+
+        .selected-path {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 8px 12px;
+            word-break: break-all;
+        }
+
+        .flipper-button.is-active {
+            border-color: var(--flipper-orange);
+            color: var(--flipper-orange);
+            box-shadow: var(--shadow-glow-sm);
+        }
+
+        /* not-connected hint inside the file list */
+        .file-list .connect-hint {
+            text-align: center;
+            padding: var(--space-xl) var(--space-md);
+            color: var(--text-muted);
+        }
+
+        .file-list .connect-hint svg {
+            width: 40px;
+            height: 40px;
+            opacity: 0.4;
+            margin-bottom: var(--space-sm);
+        }
+
+        .file-list .connect-hint p { font-size: 0.86rem; }
+
+        @media (max-width: 768px) {
+            .composer { padding: var(--space-md); }
+            .composer-block { padding: var(--space-md); }
+
+            /* keep the header actions from clipping on narrow screens */
+            .editor-container .editor-header {
+                flex-wrap: wrap;
+                gap: var(--space-sm);
+            }
+            .editor-container .editor-header .editor-actions {
+                width: 100%;
+                flex-wrap: wrap;
+                justify-content: flex-start;
+            }
+            #targetFile { max-width: 100%; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="header-left">
+                <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle file explorer">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12" />
+                        <line x1="3" y1="6" x2="21" y2="6" />
+                        <line x1="3" y1="18" x2="21" y2="18" />
+                    </svg>
+                </button>
+                <img src="assets/orange_logo.png" alt="Flipper" class="flipper-logo">
+                <h1>FlipperUSB</h1>
+                <span class="page-badge">Essay Writer</span>
+                <div id="statusIndicator" class="status-dot disconnected" title="Disconnected"></div>
+                <div class="connection-status-text" aria-live="polite">
+                    <span id="statusText" class="status-text disconnected">Disconnected</span>
+                    <span class="support-text">Text &rarr; BadUSB auto-typer</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <a href="index.html" class="flipper-button ghost small" title="Back to file manager">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                    <span>File Manager</span>
+                </a>
+                <button id="connectBtn" class="flipper-button">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                        <line x1="12" y1="2" x2="12" y2="12" />
+                    </svg>
+                    <span>Connect</span>
+                </button>
+                <button id="disconnectBtn" class="flipper-button danger" style="display: none;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                        <line x1="12" y1="2" x2="12" y2="12" />
+                    </svg>
+                    <span>Disconnect</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <!-- File Explorer Panel -->
+            <div class="file-explorer" id="fileExplorer">
+                <div class="file-explorer-header">
+                    <div class="path-navigator">
+                        <button id="parentDir" class="flipper-button small ghost" title="Go up">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M15 18l-6-6 6-6" />
+                            </svg>
+                        </button>
+                        <span id="currentPath" class="path-display">/ext/badusb</span>
+                        <button id="refreshBtn" class="flipper-button small ghost refresh-btn" title="Refresh" disabled>
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M23 4v6h-6" />
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="file-actions">
+                    <button id="saveHereBtn" class="flipper-button small primary" disabled
+                        title="Write the generated script into this folder">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                            <polyline points="17 21 17 13 7 13 7 21" />
+                            <polyline points="7 3 7 8 15 8" />
+                        </svg>
+                        <span>Save script to this folder</span>
+                    </button>
+                </div>
+
+                <!-- Quick access: jump to a folder once connected -->
+                <div class="quick-access">
+                    <button data-path="/ext/badusb">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="4" y="4" width="16" height="16" rx="2" />
+                            <path d="M9 9h6M9 12h6M9 15h4" />
+                        </svg>
+                        BadUSB
+                    </button>
+                    <button data-path="/ext/nfc">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="4" width="20" height="16" rx="2" />
+                            <path d="M7 15V9l3 3 3-3v6" />
+                            <circle cx="17" cy="12" r="2" />
+                        </svg>
+                        NFC
+                    </button>
+                    <button data-path="/ext/subghz">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                            <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                            <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                            <circle cx="12" cy="20" r="1" />
+                        </svg>
+                        SubGHz
+                    </button>
+                    <button data-path="/ext/infrared">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3" />
+                            <circle cx="12" cy="12" r="6" stroke-dasharray="2 2" />
+                            <circle cx="12" cy="12" r="9" stroke-dasharray="2 2" />
+                        </svg>
+                        Infrared
+                    </button>
+                </div>
+
+                <!-- File list -->
+                <div id="fileList" class="file-list">
+                    <div class="connect-hint">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                            <line x1="12" y1="2" x2="12" y2="12" />
+                        </svg>
+                        <p>Connect your Flipper to browse and save files.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Composer / Editor Panel -->
+            <div class="editor-container">
+                <div class="editor-header">
+                    <span id="targetFile" class="current-file">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                        </svg>
+                        <span>Download saves the .txt to your computer</span>
+                    </span>
+                    <div class="editor-actions">
+                        <button id="previewToggle" class="flipper-button small ghost" title="Show generated DuckyScript">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                            <span>Preview</span>
+                        </button>
+                        <button id="downloadBtn" class="flipper-button small ghost" title="Download .txt (Ctrl+D)">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            <span>Download</span>
+                        </button>
+                        <button id="saveFlipperBtn" class="flipper-button small primary" disabled
+                            title="Save to Flipper (Ctrl+S)">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                                <polyline points="17 21 17 13 7 13 7 21" />
+                                <polyline points="7 3 7 8 15 8" />
+                            </svg>
+                            <span>Save to Flipper</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="composer">
+                    <!-- Generator -->
+                    <section class="composer-block">
+                        <div class="composer-block-head">
+                            <h2>Text to keystrokes</h2>
+                            <span class="sub">DuckyScript &middot; WPM timing</span>
+                        </div>
+
+                        <div class="composer-grid">
+                            <label class="field">
+                                <span class="field-label">File name</span>
+                                <input id="fname" type="text" value="essay" placeholder="my_essay" spellcheck="false">
+                            </label>
+                            <label class="field">
+                                <span class="field-label">Typing speed (WPM)</span>
+                                <input id="wpm" type="number" min="1" max="500" step="1" value="40">
+                                <span class="field-hint">1 word = 5 chars &middot; delay/char = <span id="delayPreview">300 ms/char</span></span>
+                            </label>
+                            <label class="field">
+                                <span class="field-label">Start delay (ms)</span>
+                                <input id="startDelay" type="number" min="0" step="50" value="1000">
+                                <span class="field-hint">Time before the first key is sent.</span>
+                            </label>
+                        </div>
+
+                        <div class="composer-options">
+                            <label class="checkbox">
+                                <input type="checkbox" id="enterEachLine" checked>
+                                <span>Press ENTER after each line break</span>
+                            </label>
+                            <label class="checkbox">
+                                <input type="checkbox" id="addFinalEnter">
+                                <span>Add a final ENTER at the end</span>
+                            </label>
+                        </div>
+
+                        <label class="field">
+                            <span class="field-label">Your text</span>
+                            <textarea id="essay" class="composer-text"
+                                placeholder="Paste the text you want typed out&hellip;"></textarea>
+                        </label>
+
+                        <p class="hint-line">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 16v-4M12 8h.01" />
+                            </svg>
+                            If characters drop in Google Docs, lower the WPM &mdash; <code>30</code>&ndash;<code>50</code> is a safe range.
+                        </p>
+
+                        <pre id="preview" class="script-preview" hidden></pre>
+                    </section>
+
+                    <!-- Device file editor -->
+                    <section class="composer-block">
+                        <div class="composer-block-head">
+                            <h3>Device file editor</h3>
+                            <div class="editor-actions">
+                                <button id="useScriptBtn" class="flipper-button small ghost" disabled
+                                    title="Replace the editor contents with the generated script">
+                                    Use generated script
+                                </button>
+                                <button id="saveEditorBtn" class="flipper-button small primary" disabled>Save changes</button>
+                                <button id="renameBtn" class="flipper-button small ghost" disabled>Rename</button>
+                                <button id="deleteBtn" class="flipper-button small danger" disabled>Delete</button>
+                            </div>
+                        </div>
+                        <div id="selectedPath" class="selected-path">Open a file from the left to view or edit it.</div>
+                        <textarea id="fileEditor" class="composer-text"
+                            placeholder="Open a file from the left to view or edit it&hellip;" disabled></textarea>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <div class="console-controls">
+                <button id="toggleConsole" class="flipper-button small ghost">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="4 17 10 11 4 5" />
+                        <line x1="12" y1="19" x2="20" y2="19" />
+                    </svg>
+                    <span>Console</span>
+                </button>
+                <button id="clearConsole" class="flipper-button small ghost">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                    <span>Clear</span>
+                </button>
+            </div>
+            <div id="consoleOutput" class="console-output" style="display: none;"></div>
+
+            <div class="creator-credit">
+                Created with 🧡 by <a href="https://linktr.ee/dagnazty" target="_blank"
+                    rel="noopener noreferrer">dag</a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Shared site scripts. editor.js is intentionally NOT loaded here: it binds to the
+         file-manager page and defines its own debugLog/flipper. This page provides its own. -->
+    <script src="js/toast.js"></script>
+    <script src="js/serial.js"></script>
+    <script>
+    /* ============================================
+       Essay BadUSB Writer — page logic
+       Reuses FlipperSerial (serial.js) and toast/modals/getFileIcon (toast.js).
+       ============================================ */
+    (function () {
+        'use strict';
+
+        const DEBUG = true;
+
+        // serial.js expects a global debugLog with these methods; mirror the site's console behaviour.
+        window.debugLog = {
+            log(message, type = 'info') {
+                if (!DEBUG) return;
+                const out = document.getElementById('consoleOutput');
+                if (out) {
+                    const line = document.createElement('div');
+                    line.className = type;
+                    line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                    out.appendChild(line);
+                    out.scrollTop = out.scrollHeight;
+                }
+                console.log(`[${type.toUpperCase()}] ${message}`);
+            },
+            error(m) { this.log(m, 'error'); },
+            warning(m) { this.log(m, 'warning'); },
+            success(m) { this.log(m, 'success'); },
+            info(m) { this.log(m, 'info'); }
+        };
+
+        // ---- State ----
+        const flipper = new FlipperSerial();
+        const serialSupported = 'serial' in navigator;
+        let connected = false;
+        let currentPath = '/ext/badusb';
+        let selectedFilePath = null;
+        let previewOn = false;
+
+        const $ = (id) => document.getElementById(id);
+
+        const els = {
+            statusIndicator: $('statusIndicator'),
+            statusText: $('statusText'),
+            connectBtn: $('connectBtn'),
+            disconnectBtn: $('disconnectBtn'),
+            parentDir: $('parentDir'),
+            refreshBtn: $('refreshBtn'),
+            saveHereBtn: $('saveHereBtn'),
+            currentPath: $('currentPath'),
+            fileList: $('fileList'),
+            fname: $('fname'),
+            wpm: $('wpm'),
+            delayPreview: $('delayPreview'),
+            startDelay: $('startDelay'),
+            enterEachLine: $('enterEachLine'),
+            addFinalEnter: $('addFinalEnter'),
+            essay: $('essay'),
+            preview: $('preview'),
+            previewToggle: $('previewToggle'),
+            downloadBtn: $('downloadBtn'),
+            saveFlipperBtn: $('saveFlipperBtn'),
+            targetFile: $('targetFile').querySelector('span'),
+            selectedPath: $('selectedPath'),
+            fileEditor: $('fileEditor'),
+            useScriptBtn: $('useScriptBtn'),
+            saveEditorBtn: $('saveEditorBtn'),
+            renameBtn: $('renameBtn'),
+            deleteBtn: $('deleteBtn'),
+            toggleConsole: $('toggleConsole'),
+            clearConsole: $('clearConsole'),
+            consoleOutput: $('consoleOutput'),
+            mobileMenuToggle: $('mobileMenuToggle'),
+            fileExplorer: $('fileExplorer')
+        };
+
+        const CONNECT_HINT = `
+            <div class="connect-hint">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                    <line x1="12" y1="2" x2="12" y2="12"/>
+                </svg>
+                <p>Connect your Flipper to browse and save files.</p>
+            </div>`;
+
+        // ---- Helpers ----
+        const safeName = () => (els.fname.value || 'essay').replace(/\s+/g, '_');
+        const joinPath = (dir, name) => (dir.endsWith('/') ? dir : dir + '/') + name;
+        function parentOf(p) {
+            if (!p || p === '/') return '/';
+            const parts = p.split('/').filter(Boolean);
+            parts.pop();
+            return parts.length ? '/' + parts.join('/') : '/';
+        }
+
+        function setConnected(state) {
+            connected = state;
+            els.saveHereBtn.disabled = !state;
+            els.saveFlipperBtn.disabled = !state;
+            els.refreshBtn.disabled = !state;
+        }
+
+        function updateConnectionStatus(status, text) {
+            els.statusIndicator.className = 'status-dot ' + status;
+            els.statusIndicator.title = text || status;
+            els.statusText.className = 'status-text ' + status;
+            els.statusText.textContent = text || status;
+        }
+
+        // ---- Generator ----
+        function delayFromWPM(wpm) {
+            wpm = Math.max(1, Number(wpm) || 1);
+            return Math.max(1, Math.round(12000 / wpm));
+        }
+
+        function updateDelayPreview() {
+            els.delayPreview.textContent = delayFromWPM(els.wpm.value) + ' ms/char';
+        }
+
+        function paramsFromUI() {
+            return {
+                text: els.essay.value,
+                wpm: Number(els.wpm.value || 40),
+                startDelay: Number(els.startDelay.value || 0),
+                enterEachLine: els.enterEachLine.checked,
+                addFinalEnter: els.addFinalEnter.checked
+            };
+        }
+
+        function buildScript(p) {
+            const lines = [];
+            const perChar = delayFromWPM(p.wpm);
+            if (p.startDelay > 0) lines.push('DELAY ' + Math.floor(p.startDelay));
+            lines.push('DEFAULT_STRING_DELAY ' + perChar);
+            const raw = p.text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            for (const ln of raw.split('\n')) {
+                if (ln.length === 0) { if (p.enterEachLine) lines.push('ENTER'); continue; }
+                lines.push('STRING ' + ln);
+                if (p.enterEachLine) lines.push('ENTER');
+            }
+            if (p.addFinalEnter) lines.push('ENTER');
+            return { script: lines.join('\n') + '\n', perChar };
+        }
+
+        function renderPreview() {
+            if (!previewOn) { els.preview.hidden = true; return; }
+            const p = paramsFromUI();
+            const { script, perChar } = buildScript(p);
+            els.preview.textContent = '; ' + p.wpm + ' WPM \u2192 DEFAULT_STRING_DELAY ' + perChar + ' ms/char\n' + script;
+            els.preview.hidden = false;
+        }
+
+        function updateTargetLabel() {
+            const name = safeName() + '.txt';
+            els.targetFile.textContent = connected
+                ? joinPath(currentPath, name)
+                : 'Download saves ' + name + ' to your computer';
+        }
+
+        function onComposerInput() {
+            updateDelayPreview();
+            updateTargetLabel();
+            if (previewOn) renderPreview();
+        }
+
+        ['input', 'change'].forEach(evt => {
+            [els.wpm, els.essay, els.startDelay, els.enterEachLine, els.addFinalEnter, els.fname]
+                .forEach(node => node.addEventListener(evt, onComposerInput));
+        });
+
+        els.previewToggle.addEventListener('click', () => {
+            previewOn = !previewOn;
+            els.previewToggle.classList.toggle('is-active', previewOn);
+            renderPreview();
+        });
+
+        els.downloadBtn.addEventListener('click', () => {
+            const { script } = buildScript(paramsFromUI());
+            const name = safeName() + '.txt';
+            const blob = new Blob([script], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = name;
+            document.body.appendChild(a); a.click();
+            setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+            toast.success(`Downloaded ${name}`);
+        });
+
+        // ---- Connection ----
+        els.connectBtn.addEventListener('click', async () => {
+            if (!serialSupported) {
+                toast.error('Web Serial isn\'t available here. Use desktop Chrome or Edge.', { title: 'Not supported' });
+                return;
+            }
+            updateConnectionStatus('connecting', 'Connecting');
+            try {
+                const ok = await flipper.connect();
+                if (!ok) throw new Error('Could not open the serial port');
+                setConnected(true);
+                els.connectBtn.style.display = 'none';
+                els.disconnectBtn.style.display = 'inline-flex';
+                updateConnectionStatus('connected', 'Connected');
+                updateTargetLabel();
+                toast.success('Connected to Flipper Zero');
+                await listDirectory(currentPath);
+            } catch (e) {
+                setConnected(false);
+                updateConnectionStatus('disconnected', 'Disconnected');
+                toast.error(e.message || 'Connection failed');
+            }
+        });
+
+        els.disconnectBtn.addEventListener('click', async () => {
+            try { await flipper.disconnect(); } catch (_) { /* ignore */ }
+            setConnected(false);
+            els.connectBtn.style.display = 'inline-flex';
+            els.disconnectBtn.style.display = 'none';
+            updateConnectionStatus('disconnected', 'Disconnected');
+            clearSelection();
+            els.fileList.innerHTML = CONNECT_HINT;
+            updateTargetLabel();
+            toast.info('Disconnected');
+        });
+
+        // ---- Explorer ----
+        function setPath(p) {
+            currentPath = p || '/';
+            els.currentPath.textContent = currentPath;
+            updateTargetLabel();
+        }
+
+        function showLoading() {
+            els.fileList.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <span>Loading&hellip;</span>
+                </div>`;
+        }
+
+        async function listDirectory(path) {
+            if (!connected) return;
+            showLoading();
+            const items = await flipper.listDirectory(path);
+            renderFileItems(items || []);
+        }
+
+        function renderFileItems(items) {
+            if (!items.length) {
+                els.fileList.innerHTML = `
+                    <div class="empty-dir">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        <p>This directory is empty</p>
+                    </div>`;
+                return;
+            }
+
+            const sorted = items.slice().sort((a, b) => {
+                if (a.type === b.type) return a.name.localeCompare(b.name);
+                return a.type === 'directory' ? -1 : 1;
+            });
+
+            els.fileList.innerHTML = '';
+            sorted.forEach(item => {
+                const isDir = item.type === 'directory';
+                const div = document.createElement('div');
+                div.className = 'file-item';
+                if (!isDir && selectedFilePath === item.path) div.classList.add('active');
+
+                const icon = getFileIcon(item.name, isDir);
+                const iconClass = isDir ? 'icon folder' : 'icon';
+
+                div.innerHTML = `
+                    <span class="${iconClass}">${icon}</span>
+                    <span class="name">${item.name}</span>
+                    ${isDir ? '' : `
+                        <span class="size">${item.size || ''}</span>
+                        <button class="download-btn" title="Download">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                        </button>
+                        <button class="delete-btn" title="Delete">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>`}
+                `;
+
+                if (isDir) {
+                    div.addEventListener('click', () => { setPath(item.path); listDirectory(item.path); });
+                } else {
+                    div.addEventListener('click', (e) => {
+                        if (!e.target.closest('.download-btn') && !e.target.closest('.delete-btn')) {
+                            selectFile(item.path);
+                        }
+                    });
+                    div.querySelector('.download-btn').addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        await downloadDeviceFile(item.path, item.name);
+                    });
+                    div.querySelector('.delete-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        showConfirmModal(
+                            'Delete file',
+                            `Delete "${item.name}" from your Flipper? This can't be undone.`,
+                            async () => {
+                                const ok = await flipper.deleteFile(item.path);
+                                if (ok) {
+                                    toast.success(`Deleted ${item.name}`);
+                                    if (selectedFilePath === item.path) clearSelection();
+                                    listDirectory(currentPath);
+                                } else {
+                                    toast.error(`Couldn't delete ${item.name}`);
+                                }
+                            }
+                        );
+                    });
+                }
+
+                els.fileList.appendChild(div);
+            });
+        }
+
+        async function downloadDeviceFile(path, name) {
+            try {
+                const content = await flipper.readFile(path);
+                const blob = new Blob([content ?? ''], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = name;
+                document.body.appendChild(a); a.click();
+                setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+                toast.success(`Downloaded ${name}`);
+            } catch (e) {
+                toast.error(`Read failed: ${e.message}`);
+            }
+        }
+
+        els.parentDir.addEventListener('click', () => {
+            if (!connected) return;
+            setPath(parentOf(currentPath));
+            listDirectory(currentPath);
+        });
+
+        els.refreshBtn.addEventListener('click', () => { if (connected) listDirectory(currentPath); });
+
+        document.querySelectorAll('.quick-access button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const path = btn.getAttribute('data-path');
+                if (!connected) { toast.info('Connect your Flipper first.'); return; }
+                setPath(path);
+                listDirectory(path);
+            });
+        });
+
+        // ---- Save generated script to the device ----
+        async function saveScriptToDevice() {
+            if (!connected) { toast.info('Connect your Flipper first.'); return; }
+            const name = safeName() + '.txt';
+            const fullPath = joinPath(currentPath, name);
+            const { script } = buildScript(paramsFromUI());
+            try {
+                updateConnectionStatus('connecting', 'Saving\u2026');
+                const ok = await flipper.writeFile(fullPath, script);
+                updateConnectionStatus('connected', 'Connected');
+                if (ok) {
+                    toast.success(`Saved ${fullPath}`);
+                    listDirectory(currentPath);
+                } else {
+                    toast.error(`Couldn't save ${name}`);
+                }
+            } catch (e) {
+                updateConnectionStatus('connected', 'Connected');
+                toast.error(`Save failed: ${e.message}`);
+            }
+        }
+
+        els.saveHereBtn.addEventListener('click', saveScriptToDevice);
+        els.saveFlipperBtn.addEventListener('click', saveScriptToDevice);
+
+        // ---- Device file editor ----
+        function clearSelection() {
+            selectedFilePath = null;
+            els.selectedPath.textContent = 'Open a file from the left to view or edit it.';
+            els.fileEditor.value = '';
+            els.fileEditor.disabled = true;
+            [els.useScriptBtn, els.saveEditorBtn, els.renameBtn, els.deleteBtn].forEach(b => b.disabled = true);
+            document.querySelectorAll('.file-item.active').forEach(n => n.classList.remove('active'));
+        }
+
+        async function selectFile(path) {
+            selectedFilePath = path;
+            els.selectedPath.textContent = path;
+            els.fileEditor.disabled = false;
+            [els.useScriptBtn, els.saveEditorBtn, els.renameBtn, els.deleteBtn].forEach(b => b.disabled = false);
+            document.querySelectorAll('.file-item').forEach(n => n.classList.remove('active'));
+            [...document.querySelectorAll('.file-item .name')]
+                .find(n => n.textContent === path.split('/').pop())?.closest('.file-item')?.classList.add('active');
+            try {
+                const text = await flipper.readFile(path);
+                els.fileEditor.value = text ?? '';
+                toast.success(`Opened ${path.split('/').pop()}`);
+            } catch (e) {
+                toast.error(`Load failed: ${e.message}`);
+            }
+        }
+
+        els.useScriptBtn.addEventListener('click', () => {
+            if (!selectedFilePath) return;
+            const { script } = buildScript(paramsFromUI());
+            els.fileEditor.value = script;
+            toast.info('Generated script loaded — press Save changes to write it.');
+        });
+
+        els.saveEditorBtn.addEventListener('click', async () => {
+            if (!selectedFilePath) return;
+            try {
+                const ok = await flipper.writeFile(selectedFilePath, els.fileEditor.value);
+                ok ? toast.success('Saved changes') : toast.error('Save failed');
+            } catch (e) {
+                toast.error(`Save failed: ${e.message}`);
+            }
+        });
+
+        els.deleteBtn.addEventListener('click', () => {
+            if (!selectedFilePath) return;
+            const name = selectedFilePath.split('/').pop();
+            showConfirmModal(
+                'Delete file',
+                `Delete "${name}" from your Flipper? This can't be undone.`,
+                async () => {
+                    const ok = await flipper.deleteFile(selectedFilePath);
+                    if (ok) {
+                        toast.success(`Deleted ${name}`);
+                        clearSelection();
+                        listDirectory(currentPath);
+                    } else {
+                        toast.error(`Couldn't delete ${name}`);
+                    }
+                }
+            );
+        });
+
+        // Rename = copy to new path then delete original (serial.js has no rename).
+        els.renameBtn.addEventListener('click', () => {
+            if (!selectedFilePath) return;
+            const oldName = selectedFilePath.split('/').pop();
+            const dir = parentOf(selectedFilePath);
+            showFormModal({
+                title: 'Rename file',
+                submitLabel: 'Rename',
+                submitClass: 'primary',
+                fields: [{
+                    name: 'name', label: 'New name', value: oldName, required: true, autofocus: true,
+                    hint: 'No slashes. Extension is up to you.'
+                }],
+                onSubmit: async (values) => {
+                    const newName = (values.name || '').trim();
+                    if (!newName) { toast.error('Name can\'t be empty.'); return false; }
+                    if (/[\\/]/.test(newName)) { toast.error('Name can\'t contain / or \\.'); return false; }
+                    const newPath = joinPath(dir, newName);
+                    try {
+                        const data = await flipper.readFile(selectedFilePath);
+                        const wrote = await flipper.writeFile(newPath, data ?? '');
+                        if (!wrote) throw new Error('write failed');
+                        await flipper.deleteFile(selectedFilePath);
+                        toast.success(`Renamed to ${newName}`);
+                        selectedFilePath = newPath;
+                        els.selectedPath.textContent = newPath;
+                        listDirectory(currentPath);
+                    } catch (e) {
+                        toast.error(`Rename failed: ${e.message}`);
+                        return false;
+                    }
+                }
+            });
+        });
+
+        // ---- Console + mobile ----
+        els.toggleConsole.addEventListener('click', () => {
+            const hidden = els.consoleOutput.style.display === 'none';
+            els.consoleOutput.style.display = hidden ? 'block' : 'none';
+        });
+        els.clearConsole.addEventListener('click', () => { els.consoleOutput.innerHTML = ''; });
+
+        let explorerOpen = true;
+        els.mobileMenuToggle.addEventListener('click', () => {
+            explorerOpen = !explorerOpen;
+            els.fileExplorer.classList.toggle('collapsed', !explorerOpen);
+        });
+
+        // ---- Shortcuts ----
+        document.addEventListener('keydown', (e) => {
+            const mod = e.ctrlKey || e.metaKey;
+            if (!mod) return;
+            const key = e.key.toLowerCase();
+            if (key === 's') {
+                e.preventDefault();
+                if (document.activeElement === els.fileEditor && selectedFilePath) {
+                    els.saveEditorBtn.click();
+                } else if (connected) {
+                    saveScriptToDevice();
+                } else {
+                    els.downloadBtn.click();
+                }
+            } else if (key === 'd') {
+                e.preventDefault();
+                els.downloadBtn.click();
+            }
+        });
+
+        // ---- Init ----
+        if (!serialSupported) {
+            updateConnectionStatus('disconnected', 'Web Serial unavailable');
+            els.connectBtn.disabled = true;
+            els.connectBtn.title = 'Use desktop Chrome or Edge';
+        }
+        updateDelayPreview();
+        updateTargetLabel();
+    })();
+    </script>
+</body>
+
+</html>
